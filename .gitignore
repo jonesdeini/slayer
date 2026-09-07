@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# venv (mise pins the interpreter via mise.toml, which IS tracked;
+# this just ignores the venv directory itself)
+.venv/
+
+# Django
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+media/
+*.log
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Env / secrets — see CLAUDE.md: no secrets committed, .env stays local
+.env
+.env.*
+!.env.example
+
+# Editor / OS cruft
+.DS_Store
+.idea/
+.vscode/
