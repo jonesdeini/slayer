@@ -48,6 +48,22 @@ This is a portfolio piece meant to be linked from a resume/cover letter, so:
   htmx/React/Vue/drag-and-drop (SortableJS etc.) unless the user
   specifically asks to commit to one — this was an explicit "not picking a
   front end yet unless I have to."
+- **API-first, one logic layer.** The board's actual logic (querying/
+  mutating `Company`/`Lead`) lives in one place — a real API, **Django
+  REST Framework + `drf-spectacular`** for OpenAPI schema generation
+  (chosen over Django Ninja: DRF is the resume-recognizable/mainstream
+  choice for a portfolio piece; Ninja's built-in docs were the strongest
+  case for it, but `drf-spectacular` closes that gap) — not duplicated
+  between a `views.py` doing its own queries
+  and a separate `api.py` doing the same thing again. The server-rendered
+  templates are a thin consumer of that same layer, same as any other
+  client (e.g. an agent like Claude Code reading board data later). This
+  is a deliberate reaction to a real mistake seen elsewhere: letting a UI
+  path and an API path drift into two independently-maintained
+  implementations of the same logic. Keeping one logic layer means the
+  still-undecided frontend question above stays genuinely open — swapping
+  in htmx or a JS framework later is a rendering-layer change, not a
+  backend rewrite.
 
 **Crawler app** — Greenhouse ingestion:
 - Greenhouse only for v1 (explicitly out of scope: Lever and other ATSs,
@@ -70,6 +86,10 @@ This is a portfolio piece meant to be linked from a resume/cover letter, so:
   ahead — don't do it until asked.
 - Any drag-and-drop/JS-framework frontend decision.
 - Lever/other ATS crawler support.
+- Cover-letter generation/drafting via an agent (e.g. Claude Code)
+  consuming the board API — real goal, discuss and scope separately when
+  picked back up, not blocking the current build.
+- Rewriting the crawler in Go. Side-quest idea, not now.
 
 ## Architecture
 
@@ -90,9 +110,8 @@ that's not the right fit for a project's own dependency graph.
 
 Standard Django flow once scaffolded: `venv`, `pip install -r
 requirements.txt`, `manage.py migrate`, `manage.py runserver`.
-Database choice not locked yet — leaning Postgres (matching the pattern
-from the user's other home-server project, `reef-1000`) over SQLite, but
-this is a real open question, not decided.
+**Database: Postgres, decided.** Matches the pattern from the user's other
+home-server project, `reef-1000`; no reason to reach for SQLite here.
 
 Current state (as of scaffolding start): `mise.toml` pins Python via the
 `latest` alias (resolved to 3.14.7 at time of writing — Django 6.1
@@ -124,8 +143,10 @@ reasoning) rather than invent something new:
 
 - Frontend approach for the board (plain templates vs. htmx vs. a JS
   framework) — unresolved on purpose.
-- SQLite vs. Postgres for real.
 - Exact repo name/visibility timing on GitHub — when this actually gets
   pushed and flipped public.
 - Whether/when to build a dedicated crawler review UI instead of relying on
   Django admin.
+- API auth (token vs. none) — deferred, side-quest priority. Default
+  assumption until revisited: trusted-network-only, same posture as
+  `reef-1000`'s other services, no token required.
