@@ -93,9 +93,32 @@ This is a portfolio piece meant to be linked from a resume/cover letter, so:
 
 ## Architecture
 
-To be filled in as it's actually built. Two Django apps: `board` (kanban),
-`crawler` (Greenhouse ingestion). Single project, single settings module,
-env-var-backed config (`django-environ` or plain `os.environ` — TBD).
+Single project (`slayer/`), two apps, `django-environ` for env-var-backed
+config (reads `.env` locally; real env vars in deployment).
+
+- `board/models.py` — `Company`, `Lead` (status via `Lead.Status` choices).
+- `board/services.py` — the one logic layer: `leads_by_status()`,
+  `move_lead()`, `create_lead()`. Both `board/api.py` (DRF viewsets,
+  mounted under `/api/`) and `board/views.py` (plain template views,
+  mounted at `/`) call into this module instead of querying/mutating the
+  models directly — that's the "one logic layer" piece from the scope
+  notes above, made real.
+- `board/templates/board/board.html` — the column-per-status kanban board,
+  cards move via an ordinary form POST to `board:move_lead`.
+- OpenAPI schema/docs via `drf-spectacular` at `/api/schema/` and
+  `/api/docs/`.
+- `crawler/models.py` — `WatchedCompany` (name, board token, comma-sep
+  keyword filter), `ScrapedJob` (upserted by Greenhouse job id, links to a
+  promoted `Lead` via `promoted_lead`).
+- `crawler/management/commands/crawl_greenhouse.py` — fetches each active
+  `WatchedCompany`'s board, upserts matching jobs, marks jobs no longer in
+  the response as `is_active=False` (never deletes).
+- `crawler/admin.py` — both models registered, plus a "Promote selected
+  jobs to a Lead" admin action that calls `board.services.create_lead`.
+
+Local dev DB is Postgres (`slayer_development`), created manually with
+`createdb` — no seed data or fixtures ship in the repo per the no-real-data
+rule above.
 
 ## Running locally
 
@@ -113,13 +136,14 @@ requirements.txt`, `manage.py migrate`, `manage.py runserver`.
 **Database: Postgres, decided.** Matches the pattern from the user's other
 home-server project, `reef-1000`; no reason to reach for SQLite here.
 
-Current state (as of scaffolding start): `mise.toml` pins Python via the
-`latest` alias (resolved to 3.14.7 at time of writing — Django 6.1
-supports 3.12–3.14, confirmed against Django's own compat table, so this
-isn't the risky pick it might look like). `.venv` exists with Django
-already `pip install`ed directly (not yet frozen to a `requirements.txt` —
-that's a next step, along with actually running `django-admin
-startproject`). Repo not yet `git init`'d as of this note.
+Current state: scaffolded. `mise.toml` pins Python via the `latest` alias
+(resolved to 3.14.7 at time of writing — Django 6.1 supports 3.12–3.14,
+confirmed against Django's own compat table). `.venv` has Django +
+dependencies installed, frozen to `requirements.txt`. Project and both
+apps exist (`django-admin startproject` / `startapp` already run),
+migrations committed, local Postgres dev DB created manually via
+`createdb slayer_development`. Pushed to GitHub as `jonesdeini/slayer`
+(public).
 
 ## Deploying
 

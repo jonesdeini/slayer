@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Slayer — Board</title>
+    <style>
+        body { font-family: sans-serif; margin: 2rem; background: #f5f5f5; }
+        h1 { margin-bottom: 1.5rem; }
+        .board { display: flex; gap: 1rem; align-items: flex-start; overflow-x: auto; }
+        .column { background: #fff; border-radius: 6px; padding: 0.75rem; width: 220px;
+                  flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .column h2 { font-size: 0.95rem; margin: 0 0 0.75rem; color: #333; }
+        .card { background: #fafafa; border: 1px solid #ddd; border-radius: 4px;
+                padding: 0.5rem; margin-bottom: 0.5rem; }
+        .card .role { font-weight: bold; font-size: 0.9rem; }
+        .card .company { font-size: 0.85rem; color: #555; margin-bottom: 0.4rem; }
+        .card form { display: flex; gap: 0.3rem; }
+        .card select, .card button { font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <h1>Slayer — Board</h1>
+    <div class="board">
+        {% for status, label, leads in columns %}
+        <div class="column">
+            <h2>{{ label }} ({{ leads|length }})</h2>
+            {% for lead in leads %}
+            <div class="card">
+                <div class="role">{{ lead.role_title }}</div>
+                <div class="company">{{ lead.company.name }}</div>
+                <form method="post" action="{% url 'board:move_lead' lead.id %}">
+                    {% csrf_token %}
+                    <select name="status">
+                        {% for s, l in lead.Status.choices %}
+                        <option value="{{ s }}" {% if s == status %}selected{% endif %}>{{ l }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit">Move</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
